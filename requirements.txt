@@ -1,0 +1,11 @@
+numpy
+pandas
+openpyxl
+scipy
+scikit-learn
+matplotlib
+geopandas
+folium
+shapely
+pyproj
+contextily
