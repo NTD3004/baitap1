@@ -13,17 +13,12 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-FEATURES = [
-    "X1 transaction date",
-    "X2 house age",
-    "X3 distance to the nearest MRT station",
-    "X4 number of convenience stores",
-    "X5 latitude",
-    "X6 longitude",
-]
+if __package__:
+    from .data import DEFAULT_INPUT, FEATURES, PROJECT_ROOT, load_features
+else:
+    from data import DEFAULT_INPUT, FEATURES, PROJECT_ROOT, load_features
 
 
 ELBOW_REGION = (2, 3)
@@ -133,30 +128,25 @@ def save_scree_plot(summary: pd.DataFrame, output_dir: Path) -> None:
 
 def run_pca(input_path: Path, output_dir: Path) -> pd.DataFrame:
     """Save scores, component directions, and variance for each PCA model."""
-    data = pd.read_excel(input_path, engine="openpyxl")
-    data.columns = data.columns.str.strip()
-    missing = sorted(set(FEATURES) - set(data.columns))
-    if missing:
-        raise ValueError(f"Missing feature columns: {missing}")
-    features = data[FEATURES].apply(pd.to_numeric, errors="raise")
+    data, features = load_features(input_path)
     if len(features) < 6:
         raise ValueError("At least six observations are required for M=6.")
-    if not np.isfinite(features.to_numpy()).all():
-        raise ValueError("Input features contain missing or infinite values.")
-    if (features.nunique() < 2).any():
-        raise ValueError("All six features must have nonzero variance.")
-
-    scaler = StandardScaler()
-    standardized = scaler.fit_transform(features)
     output_dir.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(
-        {"feature": FEATURES, "mean": scaler.mean_, "scale": scaler.scale_}
-    ).to_csv(output_dir / "scaling.csv", index=False)
 
     summary = []
     for m in range(1, 7):
-        model = PCA(n_components=m, svd_solver="full")
-        scores = model.fit_transform(standardized)
+        pipeline = Pipeline([
+            ("scaler", StandardScaler()),
+            ("pca", PCA(n_components=m, svd_solver="full")),
+        ])
+        scores = pipeline.fit_transform(features)
+        scaler = pipeline.named_steps["scaler"]
+        model = pipeline.named_steps["pca"]
+        standardized = scaler.transform(features)
+        if m == 1:
+            pd.DataFrame(
+                {"feature": FEATURES, "mean": scaler.mean_, "scale": scaler.scale_}
+            ).to_csv(output_dir / "scaling.csv", index=False)
         components = [f"PC{i}" for i in range(1, m + 1)]
         # Keep identifiers and targets as metadata, never as PCA inputs.
         metadata = data[[c for c in data.columns if c not in FEATURES]]
@@ -197,7 +187,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--input", type=Path,
-        default=PROJECT_ROOT / "data" / "Real estate valuation data set.xlsx",
+        default=DEFAULT_INPUT,
     )
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "results" / "pca")
     args = parser.parse_args()

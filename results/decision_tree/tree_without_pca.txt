@@ -1,0 +1,19 @@
+|--- X3 distance to the nearest MRT station <= 826.8274
+|   |--- X2 house age <= 11.7000
+|   |   |--- X5 latitude <= 24.9743
+|   |   |   |--- value: [47.7059]
+|   |   |--- X5 latitude >  24.9743
+|   |   |   |--- value: [55.7279]
+|   |--- X2 house age >  11.7000
+|   |   |--- X3 distance to the nearest MRT station <= 331.7266
+|   |   |   |--- value: [46.2804]
+|   |   |--- X3 distance to the nearest MRT station >  331.7266
+|   |   |   |--- value: [38.7845]
+|--- X3 distance to the nearest MRT station >  826.8274
+|   |--- X5 latitude <= 24.9763
+|   |   |--- X3 distance to the nearest MRT station <= 4007.2660
+|   |   |   |--- value: [25.6558]
+|   |   |--- X3 distance to the nearest MRT station >  4007.2660
+|   |   |   |--- value: [16.9696]
+|   |--- X5 latitude >  24.9763
+|   |   |--- value: [37.1211]
